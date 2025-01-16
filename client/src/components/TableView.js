@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     Table,
     TableBody,
@@ -7,16 +7,19 @@ import {
     TableHead,
     TableRow,
     TableSortLabel,
-    TablePagination,
     Paper,
+    Button,
 } from '@mui/material';
 
-const TableView = ({ data }) => {
+const TableView = ({ data, page, setPage }) => {
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(10);
 
-    const sortedData = React.useMemo(() => {
+    const handleSort = (key) => {
+        const isAsc = sortConfig.key === key && sortConfig.direction === 'asc';
+        setSortConfig({ key, direction: isAsc ? 'desc' : 'asc' });
+    };
+
+    const sortedData = useMemo(() => {
         if (!sortConfig.key) return data;
         return [...data].sort((a, b) => {
             if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -24,26 +27,6 @@ const TableView = ({ data }) => {
             return 0;
         });
     }, [data, sortConfig]);
-
-    const handleSort = (key) => {
-        const isAsc = sortConfig.key === key && sortConfig.direction === 'asc';
-        setSortConfig({ key, direction: isAsc ? 'desc' : 'asc' });
-    };
-
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0); // Reset to first page when rows per page is changed
-    };
-
-    const currentRows = React.useMemo(() => {
-        const indexOfLastRow = (page + 1) * rowsPerPage;
-        const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-        return sortedData.slice(indexOfFirstRow, indexOfLastRow);
-    }, [sortedData, page, rowsPerPage]);
 
     return (
         <Paper>
@@ -83,7 +66,7 @@ const TableView = ({ data }) => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {currentRows.map((row, index) => (
+                        {sortedData.map((row, index) => (
                             <TableRow key={index}>
                                 <TableCell>{row.title}</TableCell>
                                 <TableCell>{row.danceability}</TableCell>
@@ -107,15 +90,15 @@ const TableView = ({ data }) => {
                     </TableBody>
                 </Table>
             </TableContainer>
-            <TablePagination
-                rowsPerPageOptions={[10, 25, 50]}
-                component="div"
-                count={data.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px' }}>
+                <Button onClick={() => setPage((prev) => Math.max(prev - 1, 1))} disabled={page === 1}>
+                    Previous
+                </Button>
+                <span>Page {page}</span>
+                <Button onClick={() => setPage((prev) => (data.length === 0 ? prev : prev + 1))} disabled={data.length === 0}>
+                    Next
+                </Button>
+            </div>
         </Paper>
     );
 };
